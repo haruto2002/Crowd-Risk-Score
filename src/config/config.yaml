@@ -1,0 +1,11 @@
+results_base_dir_name: results
+dir_name: demo
+trajectory_dir: trajectory_data/WorldPorter_202408_0001
+crop_area: null
+frame_range:
+- 1
+- 8990
+freq: 10
+R: 13.5
+grid_size: 5
+vec_span: 10
