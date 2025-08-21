@@ -11,36 +11,14 @@ from utils.clac_crowd_risk_score import (
 
 
 def run_parallel(inputs):
-    (
-        res_save_dir,
-        trajectory_dir,
-        start_frame,
-        grid_size,
-        R,
-        span,
-        crop_area
-    ) = inputs
+    (res_save_dir, trajectory_dir, start_frame, grid_size, R, span, crop_area) = inputs
     crs_map, density_map, vec_list = main_single(
-        res_save_dir,
-        trajectory_dir,
-        start_frame,
-        grid_size,
-        R,
-        span,
-        crop_area
+        res_save_dir, trajectory_dir, start_frame, grid_size, R, span, crop_area
     )
     return crs_map, density_map, vec_list
 
 
-def main_single(
-    save_dir,
-    trajectory_dir,
-    start_frame,
-    grid_size,
-    R,
-    span,
-    crop_area
-):
+def main_single(save_dir, trajectory_dir, start_frame, grid_size, R, span, crop_area):
     end_frame = start_frame + span
     all_track = get_all_track(trajectory_dir, start_frame, end_frame)
     map_size = np.loadtxt(f"{trajectory_dir}/map_size.txt").astype(int)
@@ -56,12 +34,12 @@ def main_single(
 
     if crop_area is not None:
         crop_crs_map = crs_map[
-            crop_area[1] // grid_size:crop_area[3] // grid_size,
-            crop_area[0] // grid_size:crop_area[2] // grid_size,
+            crop_area[1] // grid_size : crop_area[3] // grid_size,
+            crop_area[0] // grid_size : crop_area[2] // grid_size,
         ]
         crop_density_map = density_map[
-            crop_area[1] // grid_size:crop_area[3] // grid_size,
-            crop_area[0] // grid_size:crop_area[2] // grid_size,
+            crop_area[1] // grid_size : crop_area[3] // grid_size,
+            crop_area[0] // grid_size : crop_area[2] // grid_size,
         ]
         crop_vec_data = vec_data[
             (vec_data[:, 0, 0] > crop_area[0])
@@ -75,30 +53,24 @@ def main_single(
         crs_save_dir = save_dir + "/crs_map"
         os.makedirs(crs_save_dir, exist_ok=True)
         np.savetxt(
-            crs_save_dir + f"/{start_frame:04d}_{end_frame:04d}.txt",
-            crop_crs_map
+            crs_save_dir + f"/{start_frame:04d}_{end_frame:04d}.txt", crop_crs_map
         )
         vec_save_dir = save_dir + "/vec_data"
         os.makedirs(vec_save_dir, exist_ok=True)
         save_vec_data = crop_vec_data.reshape(-1, 4)
         np.savetxt(
-            vec_save_dir + f"/{start_frame:04d}_{end_frame:04d}.txt",
-            save_vec_data
+            vec_save_dir + f"/{start_frame:04d}_{end_frame:04d}.txt", save_vec_data
         )
         return crop_crs_map, crop_density_map, crop_vec_data
     else:
         crs_save_dir = save_dir + "/crs_map"
         os.makedirs(crs_save_dir, exist_ok=True)
-        np.savetxt(
-            crs_save_dir + f"/{start_frame:04d}_{end_frame:04d}.txt",
-                crs_map
-            )
+        np.savetxt(crs_save_dir + f"/{start_frame:04d}_{end_frame:04d}.txt", crs_map)
         vec_save_dir = save_dir + "/vec_data"
         os.makedirs(vec_save_dir, exist_ok=True)
         save_vec_data = vec_data.reshape(-1, 4)
         np.savetxt(
-            vec_save_dir + f"/{start_frame:04d}_{end_frame:04d}.txt",
-            save_vec_data
+            vec_save_dir + f"/{start_frame:04d}_{end_frame:04d}.txt", save_vec_data
         )
         return crs_map, density_map, vec_data
 
@@ -114,16 +86,11 @@ def main(
     R,
     frame_range,
 ):
-    if "debug" in dir_name:
-        exist_ok = True
-    else:
-        exist_ok = False
-
     start_frame, end_frame = frame_range
     save_dir = f"{results_base_dir_name}/{dir_name}"
     print("SAVE_DIR >> ", save_dir)
     res_save_dir = f"{save_dir}/each_result"
-    os.makedirs(res_save_dir, exist_ok=exist_ok)
+    os.makedirs(res_save_dir, exist_ok=False)
 
     save_config(
         save_dir,
@@ -141,21 +108,12 @@ def main(
     pool_list = []
     save_name_list = []
     for frame in range(start_frame, end_frame, freq):
-        input = (
-            res_save_dir,
-            trajectory_dir,
-            frame,
-            grid_size,
-            R,
-            vec_span,
-            crop_area
-        )
+        input = (res_save_dir, trajectory_dir, frame, grid_size, R, vec_span, crop_area)
         pool_list.append(input)
 
         save_name = f"{frame:04d}_{frame+vec_span:04d}"
         save_name_list.append(save_name)
 
-    # run parallel
     print("calculating")
     pool_size = min(os.cpu_count(), len(pool_list))
     with Pool(pool_size) as p:
@@ -230,9 +188,7 @@ def run_exp():
             frame_range=frame_range,
         )
     else:
-        func_para = [args.decay, args.max_x, args.clip_value]
         frame_range = (args.frame_start, args.frame_end)
-
         main(
             results_base_dir_name=args.results_base_dir_name,
             dir_name=args.dir_name,
@@ -250,41 +206,40 @@ def get_parser():
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        "--use_yaml", action="store_true", help="yamlファイルを使用するかどうか"
+        "--use_yaml", action="store_true", help="Whether to use a yaml config file"
     )
     parser.add_argument(
         "--yaml_path",
         type=str,
         default="src/config/config.yaml",
-        help="yamlファイルのパス",
+        help="Path to the yaml config file",
     )
     parser.add_argument(
         "--results_base_dir_name",
         type=str,
         default="results",
-        help="結果保存ディレクトリ名"
+        help="Base directory name for saving results",
     )
     parser.add_argument(
-        "--dir_name", type=str, default="0811_debug", help="出力ディレクトリ名"
+        "--dir_name", type=str, default="demo", help="Output directory name"
     )
     parser.add_argument(
         "--trajectory_dir",
         type=str,
         default="trajectory_data/WorldPorter_202408_0001",
-        help="軌道データのディレクトリ",
+        help="Directory of trajectory data",
+    )
+    parser.add_argument("--crop_area", type=str, default=None, help="Crop area")
+    parser.add_argument("--grid_size", type=int, default=5, help="Grid size")
+    parser.add_argument(
+        "--vec_span", type=int, default=10, help="Vector calculation span"
     )
     parser.add_argument(
-        "--crop_area",
-        type=str,
-        default=None,
-        help="クロップエリア"
+        "--freq", type=int, default=10, help="Frame interval for risk calculation"
     )
-    parser.add_argument("--grid_size", type=int, default=5, help="グリッドサイズ")
-    parser.add_argument("--vec_span", type=int, default=10, help="ベクトル計算のスパン")
-    parser.add_argument("--freq", type=int, default=10, help="危険度計算のフレーム間隔")
-    parser.add_argument("--R", type=float, default=13.5, help="Rパラメータ")
-    parser.add_argument("--frame_start", type=int, default=1, help="開始フレーム")
-    parser.add_argument("--frame_end", type=int, default=8990, help="終了フレーム")
+    parser.add_argument("--R", type=float, default=13.5, help="Measurement parameter")
+    parser.add_argument("--frame_start", type=int, default=1, help="Start frame")
+    parser.add_argument("--frame_end", type=int, default=8990, help="End frame")
 
     return parser
 

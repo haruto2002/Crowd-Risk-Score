@@ -1,4 +1,5 @@
 # Crowd Risk Score (CRS) 
+![overview](figs/overview.gif)
 
 ## Clone Repository
 ```bash
@@ -6,19 +7,23 @@ git clone git@github.com:haruto2002/Crowd-Risk-Score.git
 cd Crowd_Risk_Score
 ```
 
-## 仮想環境の構築
+## Virtual Environment Setup
 ```bash
 conda create -n crs python=3.10
 conda activate crs
 pip install numpy scipy opencv-python tqdm pyyaml matplotlib scikit-learn
 ```
 
-## 使用方法
+## Usage
 
-### データの準備
+### Data Preparation
 
-以下のディレクトリ構造が必要です：
+#### Trajectory Data
 
+You can download the trajectory data from Google Drive:
+[**Trajectory Data**](https://drive.google.com/drive/folders/1WkfkgLNH09XLlwDKt8zdqA5HeWCzP9rx?usp=sharing)
+
+The following directory structure is required:
 ```
 trajectory_data/
 └── WorldPorter_202408_0001/
@@ -30,11 +35,50 @@ trajectory_data/
     └── map_size.txt
 ```
 
-### プログラムの実行
+#### Evaluation Dataset
 
-#### Trajectory data に対するCrowd Risk Scoreの計算
+You can download the datasets from Google Drive:
+[**Dataset**](https://drive.google.com/drive/folders/1qlmEkQEn4RpqOGX4hrKXRy4iFzf7YiC_?usp=sharing)
 
-##### コマンドラインで変数を指定する場合
+The following directory structure is required:
+```
+dataset/
+└── WorldPorter_202408_0001/
+    ├── classification/
+    │   ├── 0001.json
+    │   ├── 0002.json
+    │   └── ...
+    └── pairwise_comparison/
+        ├── 0001.json
+        ├── 0002.json
+        └── ...
+```
+
+##### Classification Dataset
+```
+  "frame_range": Target frame range in trajectory_data >> [start_frame, end_frame]
+  "crop_points": Target area in trajectory_data >> [top_left_x, top_left_y, bottom_right_x, bottom_right_y]
+  "GT_A": Annotator A's classification judgment >> 0(Safe) or 1(Danger)
+  "GT_B": Annotator B's classification judgment >> 0(Safe) or 1(Danger)
+  "GT_same": Agreement/disagreement between two annotators >> True or False
+```
+##### Pairwise Comparison Dataset
+```
+  "1", "2": Information for two scenes to be compared, each containing:
+  - "frame_range": Target frame range in trajectory_data >> [start_frame, end_frame]  
+  - "crop_points": Target area in trajectory_data >> [top_left_x, top_left_y, bottom_right_x, bottom_right_y]  
+
+  "Judgement":  
+  - "GT_A": Annotator A's comparison judgment >> 1("1" is higher risk) or 2("2" is higher risk)  
+  - "GT_B": Annotator B's comparison judgment >> 1("1" is higher risk) or 2("2" is higher risk)   
+  - "GT_same": Agreement/disagreement between two annotators >> True or False
+```
+
+### Program Execution
+
+#### Calculating Crowd Risk Score for Trajectory Data
+
+##### Specifying variables via command line
 ```bash
 python src/main.py \
     --results_base_dir_name results \
@@ -48,13 +92,13 @@ python src/main.py \
     --frame_end 8990
 ```
 
-##### YAML設定ファイルを使用する場合
+##### Using YAML configuration file
 
-`src/config/config.yaml` ファイルを編集して、必要なパラメータを設定します：
+Edit the `src/config/config.yaml` file to set the required parameters:
 
 ```yaml
 results_base_dir_name: results
-dir_name: 0811_debug
+dir_name: demo
 trajectory_dir: trajectory_data/WorldPorter_202408_0001
 crop_area: null
 frame_range:
@@ -70,43 +114,43 @@ vec_span: 10
 python src/main.py --use_yaml --yaml_path src/config/config.yaml
 ```
 
-#### データセットに対応したスコアの算出
+##### Parameter Description
+
+- `results_base_dir_name`: Base directory name for saving results
+- `dir_name`: Output directory name
+- `trajectory_dir`: Directory path for trajectory data
+- `crop_area`: Crop area (null for entire area)
+- `frame_range`: Frame range to process [start, end]
+- `freq`: Frame interval for risk calculation
+- `R`: Radius parameter for Gaussian kernel
+- `grid_size`: Grid size
+- `vec_span`: Vector calculation span
+
+#### Calculating scores corresponding to the dataset
 
 ```bash
 # Pairwise comparison dataset
-python metric/set_prediction.py --path2dataset dataset/pairwise_comparison --dataset_type pairwise_comparison --pred_dir results/demo
+python metric/set_prediction.py --path2dataset dataset/WorldPorter_202408_0001/pairwise_comparison --dataset_type pairwise_comparison --pred_dir results/demo
 
 # Classification dataset
-python metric/set_prediction.py --path2dataset dataset/classification --dataset_type classification --pred_dir results/demo
+python metric/set_prediction.py --path2dataset dataset/WorldPorter_202408_0001/classification --dataset_type classification --pred_dir results/demo
 ```
 
-#### 評価指標の計算
+#### Calculating evaluation metrics
 ```bash
 # Pairwise comparison dataset
-python metric/calc_metric.py --path2dataset dataset/pairwise_comparison --dataset_type pairwise_comparison --pred_dir results/demo --eval_column crs
+python metric/calc_metric.py --path2dataset dataset/WorldPorter_202408_0001/pairwise_comparison --dataset_type pairwise_comparison --pred_dir results/demo --eval_column crs
 
 # Classification dataset
-python metric/calc_metric.py --path2dataset dataset/classification --dataset_type classification --pred_dir results/demo --eval_column crs
+python metric/calc_metric.py --path2dataset dataset/WorldPorter_202408_0001/classification --dataset_type classification --pred_dir results/demo --eval_column crs
 ```
 
-## パラメータの説明
+## Output
 
-- `results_base_dir_name`: 結果保存のベースディレクトリ名
-- `dir_name`: 出力ディレクトリ名
-- `trajectory_dir`: 軌道データのディレクトリパス
-- `crop_area`: クロップエリア（nullの場合は全体）
-- `frame_range`: 処理するフレーム範囲 [開始, 終了]
-- `freq`: 危険度計算のフレーム間隔
-- `R`: ガウシアンカーネルの半径パラメータ
-- `grid_size`: グリッドサイズ
-- `vec_span`: ベクトル計算のスパン
-
-## 出力
-
-実行後、以下のディレクトリが作成されます：
+After execution, the following directory will be created:
 
 ```
-results/0811_debug/
+results/demo/
 ├── each_result/
 │   ├── crs_map/
 │   │   ├── 0001_0011.txt
@@ -122,29 +166,30 @@ results/0811_debug/
 ```
 
 
-## プロジェクト構造
+## Project Structure
 
 ```
 Crowd_Risk_Score/
 ├── src/
-│   ├── main.py              # メイン実行ファイル
+│   ├── main.py              # Main execution file
 │   ├── config/
-│   │   └── config.yaml      # 設定ファイル
+│   │   └── config.yaml      # Configuration file
 │   └── utils/
-│       ├── clac_crowd_risk_score.py  # crs計算
-│       └── get_track_data.py         # 軌道データ処理
+│       ├── clac_crowd_risk_score.py  # CRS calculation
+│       └── get_track_data.py         # Trajectory data processing
 ├── dataset/
-│   ├── pairwise_comparison/
-│   └── classification/
-├── metric/                   # 評価指標計算
-│   ├── calc_classification_scores.py  # 分類スコア計算
-│   ├── calc_metric.py                 # メトリクス計算
-│   ├── set_classification_pred.py     # 分類予測設定
-│   ├── set_prediction.py             # 予測設定
-│   ├── set_pairwise_pred.py          # ペアワイズ予測設定
-│   ├── calc_precision.py             # 精度計算
-│   └── utils.py                      # ユーティリティ関数
-├── results/                 # 結果出力
-├── trajectory_data/         # 軌道データ
+│   └──WorldPorter_202408_0001/
+│       ├── classification/
+│       └── pairwise_comparison/
+├── metric/                   # Evaluation metric calculation
+│   ├── calc_classification_scores.py  # Classification score calculation
+│   ├── calc_metric.py                 # Metric calculation
+│   ├── set_classification_pred.py     # Classification prediction setup
+│   ├── set_prediction.py             # Prediction setup
+│   ├── set_pairwise_pred.py          # Pairwise prediction setup
+│   ├── calc_precision.py             # Precision calculation
+│   └── utils.py                      # Utility functions
+├── results/                 # Result output
+├── trajectory_data/         # Trajectory data
 └── README.md
 ```

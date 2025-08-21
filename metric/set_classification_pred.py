@@ -9,7 +9,6 @@ from utils import get_cropped_crs, get_cropped_density, get_bev_points
 
 
 def process_target_info(args):
-    """1つのターゲット情報を処理する関数（並列処理用）"""
     (
         i,
         target_info_path,
@@ -92,7 +91,6 @@ def set_classification_pred(path2dataset, pred_dir):
                 estimate_data[i] = result
                 pbar.update()
 
-    # 結果の保存
     save_dir = f"{pred_dir}/pred_data"
     os.makedirs(save_dir, exist_ok=True)
     dataset_name = path2dataset.split("/")[-1]

@@ -14,9 +14,7 @@ def get_args():
         choices=["pairwise_comparison", "classification"],
         required=True,
     )
-    parser.add_argument(
-        "--pred_dir", type=str, default="results/0619_debug", required=True
-    )
+    parser.add_argument("--pred_dir", type=str, default="results/demo", required=True)
     args = parser.parse_args()
     return args
 

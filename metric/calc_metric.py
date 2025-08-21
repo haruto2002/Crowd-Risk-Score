@@ -13,14 +13,10 @@ def get_args():
         "--dataset_type",
         type=str,
         choices=["pairwise_comparison", "classification"],
-        required=True
+        required=True,
     )
-    parser.add_argument(
-        "--pred_dir", type=str, default="results/0619_debug", required=True
-    )
-    parser.add_argument(
-        "--eval_column", type=str, default="crs", required=True
-    )
+    parser.add_argument("--pred_dir", type=str, default="results/demo", required=True)
+    parser.add_argument("--eval_column", type=str, default="crs", required=True)
     args = parser.parse_args()
     return args
 
@@ -35,7 +31,7 @@ def main():
     os.makedirs(save_dir, exist_ok=True)
     path2pred = f"{pred_dir}/pred_data/{path2dataset.split('/')[-1]}_pred_data.json"
 
-    print("DATASET NAME:", path2dataset.split('/')[-1])
+    print("DATASET NAME:", path2dataset.split("/")[-1])
     print("DATASET TYPE:", dataset_type)
     print("PRED PATH:", path2pred)
     print("EVAL COLUMN:", eval_column)
@@ -58,9 +54,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
-

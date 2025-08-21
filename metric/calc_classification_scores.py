@@ -63,8 +63,6 @@ def main(save_dir, path2dataset, path2pred, eval_column):
     print_aligned_stats(stats_dict_2)
     print("---------------------------------")
 
-    # print(diff_indices)
-
     assert len(A_safe_B_danger_indices) + len(A_danger_B_safe_indices) + len(
         same_safe_indices
     ) + len(same_danger_indices) == len(gt_list_A)
@@ -126,34 +124,29 @@ def save_stats(
     same_danger_num = len(same_danger_indices)
     same_safe_num = len(same_safe_indices)
     with open(f"{save_dir}/{eval_column}_stats.txt", "w") as f:
-        f.write(f"<A>\n")
+        f.write("<A>\n")
         f.write(f"Danger: {danger_num_A}\n")
         f.write(f"Safe: {safe_num_A}\n")
-        f.write(f"<B>\n")
+        f.write("<B>\n")
         f.write(f"Danger: {danger_num_B}\n")
         f.write(f"Safe: {safe_num_B}\n")
-        f.write(f"<Same>\n")
+        f.write("<Same>\n")
         f.write(f"Danger: {same_danger_num}\n")
         f.write(f"Safe: {same_safe_num}\n\n")
-        f.write(f"<Metric scores on same>\n")
+        f.write("<Metric scores on same>\n")
         f.write(f"AUC: {danger_score_auc}\n")
         f.write(f"AP: {danger_score_ap}\n")
 
 
 def print_aligned_stats(stats_dict):
-    # キーと値の最大長を取得
     max_key_length = max(len(str(k)) for k in stats_dict.keys())
     max_value_length = max(len(f"{v}") for v in stats_dict.values())
-
-    # フォーマット文字列を作成
     format_str = f"{{:<{max(max_key_length, 20)}}}: {{:>{max_value_length}}}"
-
     for key, value in stats_dict.items():
         print(format_str.format(key, value))
 
 
 def display_hist(score_data_list, label_list, eval_column, save_dir, save_data=False):
-    # save data
     if save_data:
         save_data_dir = f"{save_dir}/data"
         os.makedirs(save_data_dir, exist_ok=True)
@@ -162,9 +155,8 @@ def display_hist(score_data_list, label_list, eval_column, save_dir, save_data=F
                 f"{save_data_dir}/{eval_column}_{label_list[i]}_score_data.npy",
                 np.array(score_data),
             )
-    # display histogram
-    fig, ax = plt.subplots(figsize=(12, 12))
 
+    fig, ax = plt.subplots(figsize=(12, 12))
     color_list = ["blue", "red"]
     for i, score_data in enumerate(score_data_list):
         score_weights = np.ones_like(score_data) / len(score_data)
@@ -186,8 +178,6 @@ def display_hist(score_data_list, label_list, eval_column, save_dir, save_data=F
 
 
 def calculate_metrics(data_list, labels, eval_column, save_dir):
-
-    # ── ROC‑AUC ──
     fpr, tpr, roc_th = roc_curve(labels, data_list)
     auc = roc_auc_score(labels, data_list)
     print(f"ROC AUC = {auc:.4f}")
@@ -202,7 +192,6 @@ def calculate_metrics(data_list, labels, eval_column, save_dir):
     plt.savefig(f"{save_dir}/{eval_column}_roc_curve.png")
     plt.close()
 
-    # ── PR‑AP ──
     precision, recall, pr_th = precision_recall_curve(labels, data_list)
     ap = average_precision_score(labels, data_list)
     print(f"Average Precision = {ap:.4f}")
@@ -224,9 +213,7 @@ def get_args():
     parser.add_argument(
         "--path2dataset", type=str, default="dataset/classification", required=True
     )
-    parser.add_argument(
-        "--pred_dir", type=str, default="results/0619_debug", required=True
-    )
+    parser.add_argument("--pred_dir", type=str, default="results/demo", required=True)
     parser.add_argument("--eval_column", type=str, default="crs", required=True)
     args = parser.parse_args()
     return args
