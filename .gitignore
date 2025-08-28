@@ -1,5 +1,7 @@
 __pycache__/
 results/
 dataset/
+dataset_pre/
 trajectory_data/
 README_JP.md
+create_clean_dataset.py

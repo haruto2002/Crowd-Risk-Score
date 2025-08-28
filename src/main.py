@@ -226,7 +226,7 @@ def get_parser():
     parser.add_argument(
         "--trajectory_dir",
         type=str,
-        default="trajectory_data/WorldPorter_202408_0001",
+        default="trajectory_data/WP_0001",
         help="Directory of trajectory data",
     )
     parser.add_argument("--crop_area", type=str, default=None, help="Crop area")

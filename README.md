@@ -26,7 +26,7 @@ You can download the trajectory data from Google Drive:
 The following directory structure is required:
 ```
 trajectory_data/
-└── WorldPorter_202408_0001/
+└── WP_0001/
     ├── track_frame_data/
     │   ├── 0001.txt
     │   ├── 0002.txt
@@ -43,7 +43,7 @@ You can download the datasets from Google Drive:
 The following directory structure is required:
 ```
 dataset/
-└── WorldPorter_202408_0001/
+└── WP_0001/
     ├── classification/
     │   ├── 0001.json
     │   ├── 0002.json
@@ -83,7 +83,7 @@ dataset/
 python src/main.py \
     --results_base_dir_name results \
     --dir_name demo \
-    --trajectory_dir trajectory_data/WorldPorter_202408_0001 \
+    --trajectory_dir trajectory_data/WP_0001 \
     --grid_size 5 \
     --vec_span 10 \
     --freq 10 \
@@ -99,7 +99,7 @@ Edit the `src/config/config.yaml` file to set the required parameters:
 ```yaml
 results_base_dir_name: results
 dir_name: demo
-trajectory_dir: trajectory_data/WorldPorter_202408_0001
+trajectory_dir: trajectory_data/WP_0001
 crop_area: null
 frame_range:
 - 1
@@ -130,19 +130,19 @@ python src/main.py --use_yaml --yaml_path src/config/config.yaml
 
 ```bash
 # Pairwise comparison dataset
-python metric/set_prediction.py --path2dataset dataset/WorldPorter_202408_0001/pairwise_comparison --dataset_type pairwise_comparison --pred_dir results/demo
+python metric/set_prediction.py --path2dataset dataset/WP_0001/pairwise_comparison --dataset_type pairwise_comparison --pred_dir results/demo
 
 # Classification dataset
-python metric/set_prediction.py --path2dataset dataset/WorldPorter_202408_0001/classification --dataset_type classification --pred_dir results/demo
+python metric/set_prediction.py --path2dataset dataset/WP_0001/classification --dataset_type classification --pred_dir results/demo
 ```
 
 #### Calculating evaluation metrics
 ```bash
 # Pairwise comparison dataset
-python metric/calc_metric.py --path2dataset dataset/WorldPorter_202408_0001/pairwise_comparison --dataset_type pairwise_comparison --pred_dir results/demo --eval_column crs
+python metric/calc_metric.py --path2dataset dataset/WP_0001/pairwise_comparison --dataset_type pairwise_comparison --pred_dir results/demo --eval_column crs
 
 # Classification dataset
-python metric/calc_metric.py --path2dataset dataset/WorldPorter_202408_0001/classification --dataset_type classification --pred_dir results/demo --eval_column crs
+python metric/calc_metric.py --path2dataset dataset/WP_0001/classification --dataset_type classification --pred_dir results/demo --eval_column crs
 ```
 
 ## Output
@@ -178,7 +178,7 @@ Crowd_Risk_Score/
 │       ├── clac_crowd_risk_score.py  # CRS calculation
 │       └── get_track_data.py         # Trajectory data processing
 ├── dataset/
-│   └──WorldPorter_202408_0001/
+│   └──WP_0001/
 │       ├── classification/
 │       └── pairwise_comparison/
 ├── metric/                   # Evaluation metric calculation

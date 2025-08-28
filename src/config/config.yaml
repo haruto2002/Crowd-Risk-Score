@@ -1,6 +1,6 @@
 results_base_dir_name: results
 dir_name: demo
-trajectory_dir: trajectory_data/WorldPorter_202408_0001
+trajectory_dir: trajectory_data/WP_0001
 crop_area: null
 frame_range:
 - 1
