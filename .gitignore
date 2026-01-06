@@ -1,5 +1,5 @@
 __pycache__/
-results/
+results*/
 dataset/
 dataset_pre/
 trajectory_data/

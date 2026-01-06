@@ -196,3 +196,9 @@ Crowd_Risk_Score/
 ├── trajectory_data/         # Trajectory data
 └── README.md
 ```
+
+# Visualize
+
+```
+uv run python vis/generate_heatmap_video.py --frame_range 8000 8900 --crop_area 1400 1200 2000 1800 
+```

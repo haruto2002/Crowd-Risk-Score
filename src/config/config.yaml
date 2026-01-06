@@ -1,6 +1,6 @@
 results_base_dir_name: results_202601
-dir_name: demo
-trajectory_dir: trajectory_data/WP_0001
+dir_name: GC_0001
+trajectory_dir: trajectory_data/GC_0001
 crop_area: null
 frame_range:
 - 1
