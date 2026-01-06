@@ -83,7 +83,7 @@ dataset/
 
 ##### Specifying variables via command line
 ```bash
-python src/main.py \
+uv run python src/main.py \
     --results_base_dir_name results \
     --dir_name demo \
     --trajectory_dir trajectory_data/WP_0001 \
@@ -114,7 +114,7 @@ vec_span: 10
 ```
 
 ```bash
-python src/main.py --use_yaml --yaml_path src/config/config.yaml
+uv run python src/main.py --use_yaml --yaml_path src/config/config.yaml
 ```
 
 ##### Parameter Description
@@ -133,19 +133,19 @@ python src/main.py --use_yaml --yaml_path src/config/config.yaml
 
 ```bash
 # Pairwise comparison dataset
-python metric/set_prediction.py --path2dataset dataset/WP_0001/pairwise_comparison --dataset_type pairwise_comparison --pred_dir results/demo
+uv run python metric/set_prediction.py --path2dataset dataset/WP_0001/pairwise_comparison --dataset_type pairwise_comparison --pred_dir results/demo
 
 # Classification dataset
-python metric/set_prediction.py --path2dataset dataset/WP_0001/classification --dataset_type classification --pred_dir results/demo
+uv run python metric/set_prediction.py --path2dataset dataset/WP_0001/classification --dataset_type classification --pred_dir results/demo
 ```
 
 #### Calculating evaluation metrics
 ```bash
 # Pairwise comparison dataset
-python metric/calc_metric.py --path2dataset dataset/WP_0001/pairwise_comparison --dataset_type pairwise_comparison --pred_dir results/demo --eval_column crs
+uv run python metric/calc_metric.py --path2dataset dataset/WP_0001/pairwise_comparison --dataset_type pairwise_comparison --pred_dir results/demo --eval_column crs
 
 # Classification dataset
-python metric/calc_metric.py --path2dataset dataset/WP_0001/classification --dataset_type classification --pred_dir results/demo --eval_column crs
+uv run python metric/calc_metric.py --path2dataset dataset/WP_0001/classification --dataset_type classification --pred_dir results/demo --eval_column crs
 ```
 
 ## Output
