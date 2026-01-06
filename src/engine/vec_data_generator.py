@@ -1,0 +1,71 @@
+import glob
+import os
+
+import cv2
+import numpy as np
+
+
+class VectorGenerator:
+    def __init__(self, trajectory_dir):
+        self.trajectory_dir = trajectory_dir
+
+    def generate_vec_data(self, start_frame, end_frame):
+        all_track = self.get_all_track(self.trajectory_dir, start_frame, end_frame)
+        vec_list = self.get_all_vec(all_track, end_frame)
+        return np.array(vec_list)
+
+    def get_all_track(self, trajectory_dir, start_frame, end_frame, bev_transform=True):
+        assert os.path.exists(trajectory_dir), (
+            f"The track directory {trajectory_dir} does not exist."
+        )
+        txt_files = sorted(glob.glob(f"{trajectory_dir}/track_frame_data/*.txt"))
+        track_list = [
+            np.loadtxt(path2txt, delimiter=",")
+            for path2txt in txt_files[start_frame - 1 : end_frame]
+        ]
+
+        if start_frame > 1:
+            pre_num = 90
+            pre_start_frame = max(1, start_frame - pre_num)
+            pre_track_list = [
+                np.loadtxt(path2txt, delimiter=",")
+                for path2txt in txt_files[pre_start_frame - 1 : start_frame - 1]
+            ]
+            track_list = pre_track_list + track_list
+            start_frame = pre_start_frame
+
+        all_track = []
+        for i, track in enumerate(track_list):
+            frame = start_frame + i
+            track = np.concatenate([np.full((len(track), 1), frame), track], axis=1)
+            all_track += list(track)
+        all_track = np.array(all_track)
+
+        if bev_transform:
+            path2matrix = f"{trajectory_dir}/homography_matrix.txt"
+            all_track = self.bev_trans(path2matrix, all_track)
+
+        return all_track
+
+    def bev_trans(self, path2matrix, all_track):
+        assert os.path.exists(path2matrix), (
+            f"The bev directory {path2matrix} does not exist."
+        )
+        matrix = np.loadtxt(path2matrix)
+        all_track[:, 2:4] = cv2.perspectiveTransform(
+            all_track[:, 2:4].reshape(-1, 1, 2), matrix
+        ).reshape(-1, 2)
+        return all_track
+
+    def get_all_vec(self, all_track, end_frame):
+        id_list = np.unique(all_track[all_track[:, 0] == end_frame][:, 1])
+        vec_list = [self.get_vec(id, all_track) for id in id_list]
+        return vec_list
+
+    def get_vec(self, id, all_track):
+        track = all_track[all_track[:, 1] == id]
+        start_point = track[0, 2:]
+        end_point = track[-1, 2:]
+        vec = (end_point - start_point) / len(track)
+        pos = end_point
+        return (pos, vec)

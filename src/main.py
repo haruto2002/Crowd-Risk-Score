@@ -1,81 +1,90 @@
-import numpy as np
-import os
-import yaml
-from tqdm import tqdm
-from multiprocessing import Pool
 import argparse
-from utils.get_track_data import get_all_track, get_all_vec
-from utils.clac_crowd_risk_score import (
-    get_crs_data,
-)
+import os
+from multiprocessing import Pool
+
+import numpy as np
+from tqdm import tqdm
+
+from engine.map_data_generator import MapDataGenerator
+from engine.vec_data_generator import VectorGenerator
+from utils.conf_utils import load_config, save_config
 
 
-def run_parallel(inputs):
-    (res_save_dir, trajectory_dir, start_frame, grid_size, R, span, crop_area) = inputs
-    crs_map, density_map, vec_list = main_single(
-        res_save_dir, trajectory_dir, start_frame, grid_size, R, span, crop_area
-    )
-    return crs_map, density_map, vec_list
+class CrowdRiskScore:
+    def __init__(
+        self,
+        vector_generator: VectorGenerator,
+        map_data_generator: MapDataGenerator,
+        save_dir: str,
+        grid_size: int,
+        crop_area: list[int] | None,
+    ):
+        self.vector_generator = vector_generator
+        self.map_data_generator = map_data_generator
+        self.save_dir = save_dir
+        self.crop_area = crop_area
+        self.grid_size = grid_size
 
+    def run(
+        self,
+        start_frame,
+        end_frame,
+    ):
+        vec_data = self.vector_generator.generate_vec_data(start_frame, end_frame)
+        crs_map, density_map = self.map_data_generator.generate_map_data(vec_data)
+        self.save_map_data(crs_map, density_map, vec_data, start_frame, end_frame)
 
-def main_single(save_dir, trajectory_dir, start_frame, grid_size, R, span, crop_area):
-    end_frame = start_frame + span
-    all_track = get_all_track(trajectory_dir, start_frame, end_frame)
-    map_size = np.loadtxt(f"{trajectory_dir}/map_size.txt").astype(int)
-    vec_list = get_all_vec(all_track, end_frame)
-    vec_data = np.array(vec_list)
+    def save_map_data(self, crs_map, density_map, vec_data, start_frame, end_frame):
+        if self.crop_area is not None:
+            crs_map, density_map, vec_data = self.crop_data(
+                crs_map, density_map, vec_data
+            )
 
-    crs_map, density_map = get_crs_data(
-        map_size,
-        vec_data,
-        grid_size,
-        R,
-    )
-
-    if crop_area is not None:
-        crop_crs_map = crs_map[
-            crop_area[1] // grid_size : crop_area[3] // grid_size,
-            crop_area[0] // grid_size : crop_area[2] // grid_size,
-        ]
-        crop_density_map = density_map[
-            crop_area[1] // grid_size : crop_area[3] // grid_size,
-            crop_area[0] // grid_size : crop_area[2] // grid_size,
-        ]
-        crop_vec_data = vec_data[
-            (vec_data[:, 0, 0] > crop_area[0])
-            & (vec_data[:, 0, 0] < crop_area[2])
-            & (vec_data[:, 0, 1] > crop_area[1])
-            & (vec_data[:, 0, 1] < crop_area[3])
-        ]
-        crop_vec_data[:, 0, 0] = crop_vec_data[:, 0, 0] - crop_area[0]
-        crop_vec_data[:, 0, 1] = crop_vec_data[:, 0, 1] - crop_area[1]
-
-        crs_save_dir = save_dir + "/crs_map"
+        crs_save_dir = self.save_dir + "/crs_map"
         os.makedirs(crs_save_dir, exist_ok=True)
         np.savetxt(
-            crs_save_dir + f"/{start_frame:04d}_{end_frame:04d}.txt", crop_crs_map
+            crs_save_dir + f"/{start_frame:04d}_{end_frame:04d}.txt",
+            crs_map,
         )
-        vec_save_dir = save_dir + "/vec_data"
-        os.makedirs(vec_save_dir, exist_ok=True)
-        save_vec_data = crop_vec_data.reshape(-1, 4)
+        density_save_dir = self.save_dir + "/density_map"
+        os.makedirs(density_save_dir, exist_ok=True)
         np.savetxt(
-            vec_save_dir + f"/{start_frame:04d}_{end_frame:04d}.txt", save_vec_data
+            density_save_dir + f"/{start_frame:04d}_{end_frame:04d}.txt",
+            density_map,
         )
-        return crop_crs_map, crop_density_map, crop_vec_data
-    else:
-        crs_save_dir = save_dir + "/crs_map"
-        os.makedirs(crs_save_dir, exist_ok=True)
-        np.savetxt(crs_save_dir + f"/{start_frame:04d}_{end_frame:04d}.txt", crs_map)
-        vec_save_dir = save_dir + "/vec_data"
+        vec_save_dir = self.save_dir + "/vec_data"
         os.makedirs(vec_save_dir, exist_ok=True)
         save_vec_data = vec_data.reshape(-1, 4)
         np.savetxt(
             vec_save_dir + f"/{start_frame:04d}_{end_frame:04d}.txt", save_vec_data
         )
-        return crs_map, density_map, vec_data
+
+    def crop_data(self, crs_map, density_map, vec_data):
+        cropped_crs_map = crs_map[
+            self.crop_area[1] // self.grid_size : self.crop_area[3] // self.grid_size,
+            self.crop_area[0] // self.grid_size : self.crop_area[2] // self.grid_size,
+        ]
+        cropped_density_map = density_map[
+            self.crop_area[1] // self.grid_size : self.crop_area[3] // self.grid_size,
+            self.crop_area[0] // self.grid_size : self.crop_area[2] // self.grid_size,
+        ]
+        cropped_vec_data = vec_data[
+            (vec_data[:, 0, 0] > self.crop_area[0])
+            & (vec_data[:, 0, 0] < self.crop_area[2])
+            & (vec_data[:, 0, 1] > self.crop_area[1])
+            & (vec_data[:, 0, 1] < self.crop_area[3])
+        ]
+        cropped_vec_data[:, 0, 0] = cropped_vec_data[:, 0, 0] - self.crop_area[0]
+        cropped_vec_data[:, 0, 1] = cropped_vec_data[:, 0, 1] - self.crop_area[1]
+        return cropped_crs_map, cropped_density_map, cropped_vec_data
 
 
-def main(
+def run_parallel(inputs):
+    (executor, s_frame, e_frame) = inputs
+    executor.run(s_frame, e_frame)
+
+
+def run_experiment(
     results_base_dir_name,
     dir_name,
     trajectory_dir,
@@ -105,14 +114,21 @@ def main(
         vec_span,
     )
 
-    pool_list = []
-    save_name_list = []
-    for frame in range(start_frame, end_frame, freq):
-        input = (res_save_dir, trajectory_dir, frame, grid_size, R, vec_span, crop_area)
-        pool_list.append(input)
+    map_size = np.loadtxt(f"{trajectory_dir}/map_size.txt").astype(int)
 
-        save_name = f"{frame:04d}_{frame+vec_span:04d}"
-        save_name_list.append(save_name)
+    vector_generator = VectorGenerator(trajectory_dir)
+    map_data_generator = MapDataGenerator(map_size, grid_size, R)
+
+    executor = CrowdRiskScore(
+        vector_generator, map_data_generator, res_save_dir, grid_size, crop_area
+    )
+
+    pool_list = []
+    for frame in range(start_frame, end_frame, freq):
+        s_frame = frame
+        e_frame = frame + vec_span
+        inputs = (executor, s_frame, e_frame)
+        pool_list.append(inputs)
 
     print("calculating")
     pool_size = min(os.cpu_count(), len(pool_list))
@@ -120,48 +136,7 @@ def main(
         list(tqdm(p.imap_unordered(run_parallel, pool_list), total=len(pool_list)))
 
 
-def save_config(
-    save_dir,
-    results_base_dir_name,
-    dir_name,
-    trajectory_dir,
-    crop_area,
-    frame_range,
-    freq,
-    R,
-    grid_size,
-    vec_span,
-):
-    config = {
-        "results_base_dir_name": results_base_dir_name,
-        "dir_name": dir_name,
-        "trajectory_dir": trajectory_dir,
-        "crop_area": crop_area,
-        "frame_range": list(frame_range),
-        "freq": freq,
-        "R": R,
-        "grid_size": grid_size,
-        "vec_span": vec_span,
-    }
-
-    file_name = save_dir + "/config.yaml"
-    with open(file_name, "w") as file:
-        yaml.dump(config, file, default_flow_style=False)
-
-    print("Configuration:")
-    for key, value in config.items():
-        print(f"  {key}: {value}")
-    print(f"Config saved to {file_name}\n")
-
-
-def load_config(path2yaml):
-    with open(path2yaml, "r") as file:
-        config = yaml.safe_load(file)
-    print(f"Config loaded from {path2yaml}")
-    return config
-
-
-def run_exp():
+def main():
     parser = get_parser()
     args = parser.parse_args()
 
@@ -176,7 +151,7 @@ def run_exp():
         freq = config["freq"]
         R = config["R"]
         frame_range = config["frame_range"]
-        main(
+        run_experiment(
             results_base_dir_name=results_base_dir_name,
             dir_name=dir_name,
             trajectory_dir=trajectory_dir,
@@ -189,7 +164,7 @@ def run_exp():
         )
     else:
         frame_range = (args.frame_start, args.frame_end)
-        main(
+        run_experiment(
             results_base_dir_name=args.results_base_dir_name,
             dir_name=args.dir_name,
             trajectory_dir=args.trajectory_dir,
@@ -245,4 +220,4 @@ def get_parser():
 
 
 if __name__ == "__main__":
-    run_exp()
+    main()

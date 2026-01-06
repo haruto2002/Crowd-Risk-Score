@@ -1,0 +1,11 @@
+R: 13.5
+crop_area: null
+dir_name: demo
+frame_range:
+- 1
+- 8990
+freq: 10
+grid_size: 5
+results_base_dir_name: results_202601
+trajectory_dir: trajectory_data/WP_0001
+vec_span: 10

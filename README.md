@@ -9,9 +9,12 @@ cd Crowd_Risk_Score
 
 ## Virtual Environment Setup
 ```bash
-conda create -n crs python=3.10
-conda activate crs
-pip install numpy scipy opencv-python tqdm pyyaml matplotlib scikit-learn
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+uv venv --python 3.12
+
+source .venv/bin/activate
+
 ```
 
 ## Usage

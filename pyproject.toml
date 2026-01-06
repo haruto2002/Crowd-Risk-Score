@@ -1,0 +1,16 @@
+[project]
+name = "crowd-risk-score"
+version = "2026.01"
+
+requires-python = ">=3.12.8,<3.13"
+
+dependencies = [
+    "ruff",
+    "numpy",
+    "scipy",
+    "opencv-python",
+    "tqdm",
+    "pyyaml",
+    "matplotlib",
+    "scikit-learn",
+]
